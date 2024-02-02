@@ -22,9 +22,9 @@ P3= 0.055 # PID library default = 0.2
 I3 = P3/8 # default = 0
 D3 = .0075 # default = 0
 
-P4= 0.01 # PID library default = 0.2
-I4 = 0.0085 # default = 0
-D4 = .0085 # default = 0
+P4= .025 # PID library default = 0.2
+I4 = P4/4 # default = 0
+D4 = .1 # default = 0
 
 P5= 0.011 # PID library default = 0.2
 I5 = P5/8 # default = 0
@@ -45,13 +45,19 @@ WayPoint_Code = False
 
 ########################## END CODE TESTING MODES #######################################
 
-Waypoints = [45.57593528148754, -122.50271027559943, 1020, 
-             45.62826770774586, -122.57372517220868, 1020, 
-             45.61583265797959, -122.6435420347307, 1020, 
-             45.60356804100511, -122.63269575473953, 1020, 
-             45.59503418262268, -122.62136339451088, 500, 
-             45.588514786909066, -122.60451261294489, 350]
-
+#Waypoints = [45.57593528148754, -122.50271027559943, 1020, 
+            # 45.62826770774586, -122.57372517220868, 1020, 
+            # 45.60356804100511, -122.63269575473953, 1020, 
+             #45.59503418262268, -122.62136339451088, 500, 
+             #45.588514786909066, -122.60451261294489, 350]
+#Bimini Waypoints
+Waypoints = [25.69424, -79.23323, 2000, 
+             25.68391, -79.23632, 2000, 
+             25.67588, -79.26742, 2000, 
+             25.68047, -79.28306, 2000, 
+             25.68703, -79.31143, 2000, 
+             25.70018, -79.31079, 500,
+             25.70122, -79.27606, 50]
 
 
 
@@ -211,7 +217,7 @@ def monitor():
                     ### To ensure reasonable roll rates, if the difference in heading > 20, roll 20 degrees ###
                     if abs(current_heading - desired_Head) > 40:
                         print("Saftey Roll Mode")
-                        desired_roll = -35
+                        desired_roll = 35
                         roll_PID.SetPoint = desired_roll
                         current_roll = posi[7]
                         roll_PID.update(current_roll)
@@ -225,24 +231,24 @@ def monitor():
                     client.sendCTRL(ctrl)
                     distance_to_desired = client.distance(current_Lat[0], desired_Lat, current_Long[0], desired_Long) # Distance to next waypoint in feet
                     print("Distance To Next Waypoint: ", distance_to_desired)
-                    if distance_to_desired < 5000: # Distance in Feet
+                    if distance_to_desired < 500: # Distance in Feet
                         lat = lat + 3
                         long = long + 3
                         alt = alt + 3
                         k = k + 1
                         f = 0
-                        if k == 2:
+                        if k == 4:
                              ctrl = [-998, -998, -998, 0.75,-998, -998, -998]
                              j = 0 # This breaks out of waypoint mode and enters aircraft into FREE FLIGHT Mode. Waypoint Navigation will resume after free flight time limit
-                        if k == 3:
-                             ctrl = [-998, -998, -998, 0.2,-998, -998, -998]
                         if k == 5:
+                             ctrl = [-998, -998, -998, 0.3,-998, -998, -998]
+                        if k == 6:
                              ctrl = [-998, -998, -998, 0.1,-998, -998, -998]
                     client.sendCTRL(ctrl)
                     if alt+1 > len(Waypoints): # Code Stops After all Waypoints have been reached
                         break
 
-            while j == 0 and k == 2: # FREE FLIGHT MODE: Time limited mode
+            while j == 0 and k == 4: # FREE FLIGHT MODE: Time limited mode
                 if f == 0:
                     FF_Start_Time = datetime.now()
                     print("You have entered FREE FLIGHT MODE! Control the aircraft as you wish!")

@@ -47,10 +47,10 @@ WayPoint_Code = False
 
 Waypoints = [45.57593528148754, -122.50271027559943, 1020, 
              45.62826770774586, -122.57372517220868, 1020, 
-             45.61583265797959, -122.6435420347307, 750, 
-             45.60356804100511, -122.63269575473953, 750, 
+             45.61583265797959, -122.6435420347307, 1020, 
+             45.60356804100511, -122.63269575473953, 1020, 
              45.59503418262268, -122.62136339451088, 500, 
-             45.588514786909066, -122.60451261294489, 50]
+             45.588514786909066, -122.60451261294489, 350]
 
 
 
@@ -223,7 +223,7 @@ def monitor():
                     ### Send Control to Waypoint ###
                     ctrl = [new_ele_ctrl, new_ail_ctrl, -998, -998,-998, -998, -998] # ele, ail, rud, thr. -998 means don't change
                     client.sendCTRL(ctrl)
-                    distance_to_desired = client.distance(current_Lat[0], desired_Lat, current_Long[0], desired_Long)
+                    distance_to_desired = client.distance(current_Lat[0], desired_Lat, current_Long[0], desired_Long) # Distance to next waypoint in feet
                     print("Distance To Next Waypoint: ", distance_to_desired)
                     if distance_to_desired < 5000: # Distance in Feet
                         lat = lat + 3
@@ -233,13 +233,50 @@ def monitor():
                         f = 0
                         if k == 2:
                              ctrl = [-998, -998, -998, 0.75,-998, -998, -998]
+                             j = 0 # This breaks out of waypoint mode and enters aircraft into FREE FLIGHT Mode. Waypoint Navigation will resume after free flight time limit
                         if k == 3:
                              ctrl = [-998, -998, -998, 0.2,-998, -998, -998]
                         if k == 5:
-                             ctrl = [-998, -998, -998, 0.05,-998, -998, -998]
+                             ctrl = [-998, -998, -998, 0.1,-998, -998, -998]
                     client.sendCTRL(ctrl)
-                    if lat == None:
+                    if alt+1 > len(Waypoints): # Code Stops After all Waypoints have been reached
                         break
+
+            while j == 0 and k == 2: # FREE FLIGHT MODE: Time limited mode
+                if f == 0:
+                    FF_Start_Time = datetime.now()
+                    print("You have entered FREE FLIGHT MODE! Control the aircraft as you wish!")
+                    time.sleep(2)
+                    f = f + 1
+                if (datetime.now() > FF_Start_Time + timedelta(milliseconds = 60 * 1000)): # If one minute has passed while in Free Flight Mode, Free Flight Ends and Waypoint Nav Resumes
+                    j = 1 # Breaks out of Free Flight after current loop and Allows Waypoint Nav to Resume
+                Free_Flight_Origin = [Waypoints[lat-3], Waypoints[long-3], Waypoints[alt-3]]
+                Origin_Lat = Free_Flight_Origin[0]
+                Origin_Long = Free_Flight_Origin[1]
+                Origin_Alt = Free_Flight_Origin[2]
+                Free_Flight_Radius = 4000 # Free Flight Zone Radius in Feet
+                Free_Flight_Floor = GroundAlt[0]+750 # Free Flight Floor (Lower Altitude Limit) in Feet
+                Free_Flight_Ceiling = GroundAlt[0]+3000 # Free Flight Ceiling (Upper Altitude Limit) in Feet
+                if (datetime.now() > last_update + timedelta(milliseconds = update_interval * 1000)):
+                    last_update = datetime.now()
+                    posi = client.getPOSI()
+                    current_heading = posi[8]
+                    altitudedref = b"sim/cockpit/pressure/cabin_altitude_actual_ft"
+                    altitude = client.getDREF(altitudedref)
+                    latitude = b"sim/flightmodel/position/latitude"
+                    current_Lat = client.getDREF(latitude)
+                    longitude = b"sim/flightmodel/position/longitude"
+                    current_Long = client.getDREF(longitude)
+                    distance_to_boundary = Free_Flight_Radius-client.distance(current_Lat[0], Origin_Lat, current_Long[0], Origin_Long) # Distance to Boundary of Free Flight Zone in feet
+                    if distance_to_boundary < 1000:
+                        print("Approaching Edge Of Free Flight Zone!!!", "\n", "Distance to Boundary = ", distance_to_boundary)
+                    if altitude[0] < Free_Flight_Floor+200:
+                        print("Too LOW!!! PULL UP!!!")
+                    elif altitude[0] > Free_Flight_Ceiling-200:
+                        print("Too HIGH!!! NOSE DOWN!!!")
+                    
+
+
 
 if __name__ == "__main__":
     monitor()

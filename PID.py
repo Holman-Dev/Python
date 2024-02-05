@@ -29,18 +29,20 @@
 More information about PID Controller: http://en.wikipedia.org/wiki/PID_controller
 """
 import time
+import numpy as np
 
 class PID:
     """PID Controller
     """
 
-    def __init__(self, P=0.2, I=0.0, D=0.0, current_time=None):
+    def __init__(self, P=0.2, I=0.0, D=0.0, rate = 1.25, current_time=None):
 
         self.Kp = P
         self.Ki = I
         self.Kd = D
+        self.max_rate_of_change = rate
 
-        self.sample_time = 0.00
+        self.sample_time = 1/60
         self.current_time = current_time if current_time is not None else time.time()
         self.last_time = self.current_time
 
@@ -57,9 +59,10 @@ class PID:
 
         # Windup Guard
         self.int_error = 0.0
-        self.windup_guard = 20.0
+        self.windup_guard = 20
+        
 
-        self.output = 0.0
+        self.output = 0
 
     def update(self, feedback_value, current_time=None):
         """Calculates PID value for given reference feedback
@@ -74,6 +77,10 @@ class PID:
 
         """
         error = self.SetPoint - feedback_value
+
+        # Rate limiter
+        if abs(error - self.last_error) > self.max_rate_of_change:
+            error = self.last_error + np.sign(error - self.last_error) * self.max_rate_of_change
 
         self.current_time = current_time if current_time is not None else time.time()
         delta_time = self.current_time - self.last_time

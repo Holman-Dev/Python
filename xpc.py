@@ -413,6 +413,31 @@ class XPlaneConnect(object):
         # Send message
         self.sendUDP(buffer)
 
+    def sendWYPT(self, op, points):
+        """Adds, removes, or clears waypoints. Waypoints are three dimensional points on or
+        above the Earth's surface that are represented visually in the simulator. Each
+        point consists of a latitude and longitude expressed in fractional degrees and
+        an altitude expressed as meters above sea level.
+
+        Args:
+            op: The operation to perform. Pass `1` to add waypoints,
+            `2` to remove waypoints, and `3` to clear all waypoints.
+            points: A sequence of floating point values representing latitude, longitude, and
+            altitude triples. The length of this array should always be divisible by 3.
+        """
+        if op < 1 or op > 3:
+            raise ValueError("Invalid operation specified.")
+        if len(points) % 3 != 0:
+            raise ValueError("Invalid points. Points should be divisible by 3.")
+        if len(points) / 3 > 255:
+            raise ValueError("Too many points. You can only send 255 points at a time.")
+
+        if op == 3:
+            buffer = struct.pack(b"<4sxBB", b"WYPT", 3, 0)
+        else:
+            buffer = struct.pack(("<4sxBB" + str(len(points)) + "f").encode(), b"WYPT", op, len(points), *points)
+        self.sendUDP(buffer)
+
 class ViewType(object):
     Forwards = 73
     Down = 74

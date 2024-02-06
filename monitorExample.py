@@ -71,7 +71,7 @@ Number_OF_Waypoints = int(len(Waypoints)/3)
 #print(Total_Points)
 #print(Number_OF_Waypoints)
 #print(Waypoints[0], Waypoints[Number_OF_Waypoints], Waypoints[Number_OF_Waypoints*2])
-
+#
 # Your specified latitude, longitude, and radius
 center_lat = Free_Flight_Waypoint[0]  # replace with your latitude
 center_lon = Free_Flight_Waypoint[1]  # replace with your longitude
